@@ -1,0 +1,5 @@
+Material: mt_BG07_un
+Shader: 
+
+Saved Textures:
+  - _MainTex: BG07_co

@@ -1,0 +1,5 @@
+Material: mt_moon_glare
+Shader: 
+
+Saved Textures:
+  - _MainTex: tx_home_helloween

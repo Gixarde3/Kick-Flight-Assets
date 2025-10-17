@@ -1,0 +1,5 @@
+Material: it_001_blue_far
+Shader: 
+
+Saved Textures:
+  - _MainTex: it_tx_001_far_blue

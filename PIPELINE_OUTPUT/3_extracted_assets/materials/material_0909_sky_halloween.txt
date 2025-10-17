@@ -1,0 +1,5 @@
+Material: sky_halloween
+Shader: 
+
+Saved Textures:
+  - _Tex: sky_halloween

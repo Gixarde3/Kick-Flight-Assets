@@ -1,0 +1,5 @@
+Material: fd_mt_00602_plant
+Shader: 
+
+Saved Textures:
+  - _MainTex: fd_tx_00602_co

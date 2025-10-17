@@ -1,0 +1,20 @@
+{
+  "timestamp": "2025-10-13T08:24:11.254860",
+  "input_directory": "octo_restored\\unknown",
+  "output_directory": "octo_sorted",
+  "statistics": {
+    "afs2": 12,
+    "crid": 148,
+    "unity": 2374,
+    "unity_fixed": 644,
+    "unknown": 46,
+    "errors": []
+  },
+  "directories": {
+    "afs2_archives": "octo_sorted\\1_afs2_archives",
+    "cri_audio_video": "octo_sorted\\2_cri_audio_video",
+    "unity_bundles": "octo_sorted\\3_unity_bundles",
+    "unity_fixed": "octo_sorted\\4_unity_fixed",
+    "unknown": "octo_sorted\\5_unknown"
+  }
+}

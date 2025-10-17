@@ -1,0 +1,5 @@
+Material: BG_moon_xmas
+Shader: 
+
+Saved Textures:
+  - _MainTex: BG_moon_xmas

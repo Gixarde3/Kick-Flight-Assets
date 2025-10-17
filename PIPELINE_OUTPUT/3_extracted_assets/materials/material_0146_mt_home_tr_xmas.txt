@@ -1,0 +1,5 @@
+Material: mt_home_tr_xmas
+Shader: 
+
+Saved Textures:
+  - _MainTex: tx_home_xmas

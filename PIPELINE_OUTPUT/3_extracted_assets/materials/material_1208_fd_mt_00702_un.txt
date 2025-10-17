@@ -1,0 +1,5 @@
+Material: fd_mt_00702_un
+Shader: 
+
+Saved Textures:
+  - _MainTex: fd_tx_00702_co
