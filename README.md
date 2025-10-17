@@ -239,14 +239,6 @@ This tool is for **educational and research purposes only**.
 
 ## Credits
 
-- **Author**: Reverse-engineered from Kick Flight game bundles
+- **Author**: Gixarde3
 - **Unity Version**: 2018.4.11f1
 - **Libraries**: lz4, UnityPy
-
-## License
-
-This project is provided as-is for educational purposes.
-
----
-
-**Note**: This tool specifically targets Kick Flight's encryption scheme. It may not work with other Unity games without modification.
