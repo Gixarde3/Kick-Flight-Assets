@@ -228,15 +228,6 @@ The tool uses intelligent block parsing instead of trusting header counts:
 
 This solves the "unreliable block count" problem found in Kick Flight bundles.
 
-## Legal Disclaimer
-
-This tool is for **educational and research purposes only**. 
-
-- Respect intellectual property rights
-- Only use on content you have legal rights to access
-- The authors are not responsible for misuse of this tool
-- Game assets remain property of their respective owners
-
 ## Credits
 
 - **Author**: Gixarde3
