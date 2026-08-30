@@ -427,3 +427,435 @@ El objetivo es conservar la evidencia original, producir representaciones útile
 - **Media:** CRI USM, AFS2/AWB, HCA y WAV mediante cricodecs
 - **Parser Unity:** UnityPy
 - **Autor original indicado en el proyecto:** Gixarde3
+
+---
+
+# Kick Flight — Octo Asset Preservation Pipeline (English)
+
+Preservation and extraction pipeline for local **Kick Flight** resources stored in the **Octo** distribution/cache. It rebuilds UnityFS bundles, exports research-friendly objects, and preserves the original bytes so that no converted result replaces the source material.
+
+> Responsible use: work only with copies of files you are authorized to analyze. This repository processes local content; it does not implement authentication, matchmaking, battle logic, account access, or Grenge server protocols.
+
+## Executive summary
+
+The current entry point is [asset_extractor.py](asset_extractor.py). With one command it walks through octo_sorted/ and produces:
+
+- complete UnityFS bundles that can be loaded by UnityPy;
+- Unity objects converted to PNG, OBJ, JSON, shaders, fonts, and raw bytes;
+- AnimationClip data as JSON plus its exact serialized representation in .bin;
+- demultiplexed CRI USM streams;
+- AFS2/AWB entries in their encoded format and HCA audio decoded to WAV;
+- byte-for-byte copies of CRI and unknown files;
+- inventories, SHA-256 hashes, repairs, warnings, errors, and an aggregate report.
+
+The bundles in 1_complete_unityfs/ are the authoritative output. Converted files are working views for inspection, searching, editing, or importing; they do not replace the original bundle.
+
+## Complete workflow
+
+```mermaid
+flowchart TD
+    A["octo_sorted/"] --> B["3_unity_bundles/*.bundle"]
+    B --> C["Repair Octo metadata"]
+    C --> D["Rebuild standard UnityFS"]
+    D --> E["Validate with UnityPy"]
+    E --> F["Export objects and write inventory"]
+
+    A --> G["2_cri_audio_video/*"]
+    G --> H["Detect CRI / USM"]
+    H --> I["Demultiplex streams"]
+
+    A --> J["1_afs2_archives/*"]
+    J --> K["Read AWB and extract HCA"]
+    K --> L["Decode WAV with subkey"]
+
+    A --> M["5_unknown/*"]
+    M --> N["Preserve without conversion"]
+
+    F --> O["PIPELINE_OUTPUT_V3/"]
+    I --> O
+    L --> O
+    N --> O
+```
+
+### What happens to a Unity bundle
+
+```mermaid
+flowchart LR
+    A["Octo bytes"] --> B["XOR the signature"]
+    B --> C["Check UnityFS v6"]
+    C --> D["Decompress blocks-info with LZ4"]
+    D --> E["Try valid counts and complements"]
+    E --> F["Repair sizes, flags, and nodes"]
+    F --> G["Write 50-byte UnityFS header"]
+    G --> H["Keep payload and CAB/.resS nodes"]
+    H --> I["UnityPy.load()"]
+    I --> J["Exports + manifests"]
+```
+
+### V3 execution sequence
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant P as asset_extractor.py
+    participant R as reconstruct_unity_bundles.py
+    participant Y as UnityPy
+    participant C as cricodecs
+    participant O as PIPELINE_OUTPUT_V3
+
+    U->>P: python asset_extractor.py --input octo_sorted
+    P->>R: repair_bundle_bytes(bytes)
+    R-->>P: Complete UnityFS + repairs
+    P->>Y: Load rebuilt bundle
+    Y-->>P: Unity objects
+    P->>C: Load USM / AWB / HCA
+    C-->>P: Streams and decoded audio
+    P->>O: Exports, originals, manifests, and report_v3.json
+    P-->>U: JSON summary and exit code
+```
+
+## Input data: octo_sorted/
+
+The included snapshot contains the inventory recorded in [octo_sorted/extraction_report.json](octo_sorted/extraction_report.json):
+
+| Folder | Observed content | Count | Consumed by V3? |
+| --- | --- | ---: | --- |
+| 1_afs2_archives/ | AFS2/AWB containers with audio entries | 12 | Yes |
+| 2_cri_audio_video/ | CRI files; the detector identifies the actual format | 148 | Yes |
+| 3_unity_bundles/ | UnityFS bundles using the Octo layout | 2374 | Yes |
+| 4_unity_fixed/ | Unity files repaired by an earlier stage | 644 | No, manual reference only |
+| 5_unknown/ | Files that were not classified | 46 | Yes, preserved without conversion |
+
+These counts belong to this snapshot and may change when the dump is replaced. The main pipeline looks for bundles directly in 3_unity_bundles/*.bundle; it does not search recursively and does not automatically use 4_unity_fixed/.
+
+## Requirements
+
+- Python **3.10 or newer**. The code uses modern Python annotations and syntax; Python 3.6, mentioned in older documentation, is no longer supported.
+- Enough disk space for complete bundles, converted assets, and preserved copies. Processing can produce a large number of files.
+- The dependencies listed in [requirements.txt](requirements.txt):
+
+  - lz4 for blocks-info and compressed Unity blocks;
+  - UnityPy for reading and inventorying Unity objects;
+  - cricodecs for CRI USM, AFS2/AWB, HCA, and WAV.
+
+This README was verified locally with Python 3.14.5, lz4 4.4.5, and UnityPy 1.25.3.
+
+## Installation
+
+Run the following commands from the repository root.
+
+### Windows PowerShell
+
+```powershell
+python --version
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
+
+If PowerShell blocks activation, use the virtual-environment interpreter directly:
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe asset_extractor.py
+```
+
+### Git Bash or Linux/macOS
+
+```bash
+python3 --version
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
+
+## Recommended execution: complete V3 pipeline
+
+With the virtual environment active and the shell located at the project root:
+
+```bash
+python asset_extractor.py --input octo_sorted --output PIPELINE_OUTPUT_V3
+```
+
+The values above match the code defaults, so this also works:
+
+```bash
+python asset_extractor.py
+```
+
+For a short smoke run, --limit N takes the first N items from **each input category**, not N items in total:
+
+```bash
+python asset_extractor.py --input octo_sorted --output PIPELINE_OUTPUT_V3_SMOKE --limit 1
+```
+
+Available options:
+
+| Option | Default | Description |
+| --- | --- | --- |
+| --input PATH | octo_sorted | Root containing the five classified folders |
+| --output PATH | PIPELINE_OUTPUT_V3 | Directory where the complete result is written |
+| --limit N | no limit | Process the first N files in each category |
+
+The process continues with the remaining files after an individual failure. At the end:
+
+- exit code 0 means no errors were recorded;
+- exit code 1 means one or more errors occurred; inspect manifests/errors.json;
+- warnings do not fail the run, but are stored in manifests/warnings.json.
+
+## Specialized UnityFS reconstruction
+
+[reconstruct_unity_bundles.py](reconstruct_unity_bundles.py) is the low-level module for repairing only the Unity bundles in octo_sorted/3_unity_bundles/. asset_extractor.py already uses the same logic internally, so running both is not required to obtain the V3 output.
+
+Run the specialized stage against the complete input:
+
+```bash
+python reconstruct_unity_bundles.py
+```
+
+Run a short test or skip UnityPy validation for a faster pass:
+
+```bash
+python reconstruct_unity_bundles.py --limit 10
+python reconstruct_unity_bundles.py --no-verify
+```
+
+With explicit paths:
+
+```bash
+python reconstruct_unity_bundles.py \
+  --input octo_sorted/3_unity_bundles \
+  --output PIPELINE_OUTPUT_V2/1_reconstructed_bundles
+```
+
+This tool:
+
+1. checks the XOR signature and requires UnityFS format 6;
+2. decompresses the LZ4 metadata;
+3. rebuilds the block table and node directory;
+4. preserves CAB-*, .resS, and other sidecar nodes;
+5. validates every output with UnityPy unless --no-verify is passed;
+6. writes PIPELINE_OUTPUT_V2/bundle_rebuild_report.json with sizes, hashes, nodes, repairs, objects, and errors.
+
+## V3 output structure
+
+```text
+PIPELINE_OUTPUT_V3/
+├── 1_complete_unityfs/
+│   └── *.bundle                         # complete repaired UnityFS bundles
+├── 2_converted_unity_assets/
+│   ├── images/
+│   │   ├── Texture2D/                   # PNG
+│   │   ├── Sprite/                      # PNG
+│   │   └── Cubemap/                     # PNG when UnityPy can convert it
+│   ├── meshes/                          # OBJ
+│   ├── structured/                      # JSON by Unity type
+│   ├── animation_raw/                   # exact AnimationClip bytes
+│   ├── structured_raw/                  # serialized structured-type bytes
+│   ├── text_assets/                     # TextAsset as original bytes
+│   ├── shaders/                         # exported shaders
+│   ├── fonts/                           # font data
+│   └── unconverted_raw/                 # fallback for incomplete conversions
+├── 3_cri_media/
+│   ├── usm_demux/                       # streams extracted from USM
+│   └── awb_entries/                     # HCA and WAV per AWB entry
+├── 4_preserved_originals/
+│   ├── cri_loose/                       # copies of loose CRI files
+│   ├── afs2_awb/                        # copies of original AFS2 files
+│   └── unknown/                         # copies of unknown files
+├── manifests/
+│   ├── unity_objects.jsonl              # one record per Unity object
+│   ├── bundles.json                     # bundles, nodes, hashes, and repairs
+│   ├── animations.json                  # AnimationClip index
+│   ├── media.json                       # CRI and AFS2/AWB index
+│   ├── errors.json                      # errors by stage and file
+│   └── warnings.json                    # fallbacks and conversion warnings
+└── report_v3.json                       # aggregate summary
+```
+
+### Exported types
+
+| Detected type | Primary output | Additional preservation |
+| --- | --- | --- |
+| Texture2D, Sprite, Cubemap | PNG | .bin when dimensions are invalid |
+| Mesh | OBJ | .bin fallback when conversion fails |
+| Material, AnimatorController, AnimatorOverrideController, Avatar, MonoBehaviour | Typetree JSON | serialized bytes when applicable |
+| AnimationClip | Typetree JSON | exact .bin and animations.json index |
+| TextAsset | .bin | original bytes restored through surrogateescape |
+| Shader | .shader | .bin fallback when UnityPy cannot export it |
+| Font | .font | m_FontData bytes |
+| USM | demultiplexed streams | original copy under 4_preserved_originals/cri_loose/ |
+| AWB/HCA | encoded HCA and WAV | original AFS2 copy |
+| Unknown | — | byte-for-byte copy |
+
+## Findings: Octo encryption and obfuscation
+
+### 1. Seven-byte repeating XOR
+
+The initial bundle signature does not appear as UnityFS in the raw bytes. The implementation applies a repeating XOR key to the first seven bytes:
+
+```text
+6F 0F FA 46 D3 28 3A
+```
+
+For each position i:
+
+```text
+decoded[i] = raw[i] XOR key[i mod 7]
+```
+
+In the included sample, this produces exactly 55 6E 69 74 79 46 53, which is UnityFS.
+
+This is reversible obfuscation, not strong cryptographic encryption: the key is short, repetitive, and embedded in the code. There is no evidence in these scripts of AES, RSA, key exchange, a keystore, or a general cryptographic layer for the payload.
+
+### 2. Octo header differs from a standard UnityFS header
+
+After the signature, the Octo-stored prefix cannot be passed directly to UnityPy. The rebuilder:
+
+- restores UnityFS format 6;
+- takes version and revision information from the input header;
+- rebuilds a standard 50-byte UnityFS header;
+- sets flags 0x00000003, indicating LZ4 blocks-info;
+- recalculates the total size from the rebuilt compressed metadata and original payload.
+
+The data payload is not re-encrypted or interpreted as a new format; it is preserved and re-associated with its node directory.
+
+### 3. Partially damaged or obfuscated metadata
+
+The repair logic does not blindly trust the file counters. It evaluates candidates and accepts only a structurally consistent layout:
+
+- the original block_count or a one-byte-complement variant, byte XOR 0xFF;
+- node_count using the same candidate strategy;
+- block flags within {0, 1, 2, 3};
+- node flags within {0, 1, 2, 4};
+- the sum of compressed sizes equals the actual payload size;
+- nodes are contiguous, begin at offset 0, and end at the total uncompressed size;
+- node names are UTF-8 and blocks-info is consumed exactly.
+
+If the LZ4 information block fails, the implementation also tries a targeted repair of byte 5 in that section. Every change is recorded in repairs and in manifests/bundles.json or bundle_rebuild_report.json.
+
+The important consequence is that block_count is not a sufficient source of truth. The complete structure — sizes, flags, offsets, names, and payload size — acts as an integrity check and avoids guessing when multiple solutions are possible.
+
+### 4. Unity sidecars and why the node directory matters
+
+A UnityFS bundle is not merely the concatenation of decompressed blocks. Its directory associates the serialized file with external resources such as CAB-* and .resS. The older extraction stage could produce a useful raw stream, but it lost that relationship.
+
+The current reconstruction preserves the complete directory. That makes the bundles in 1_complete_unityfs/ better candidates for UnityPy or compatible-client research than the raw streams produced by earlier stages.
+
+### 5. HCA is a separate layer from Octo XOR
+
+HCA audio is stored inside AWB entries. cricodecs reads the container subkey and uses it to decode WAV audio. That protection/decoding belongs to the CRI audio format and must be analyzed separately from the Octo XOR and metadata obfuscation.
+
+## Difference between stages and what each preserves
+
+```mermaid
+flowchart TD
+    A["Original Octo data"] --> B["V2: UnityFS reconstruction"]
+    A --> C["V3: full preservation"]
+    B --> B1["Complete Unity bundles"]
+    B --> B2["bundle_rebuild_report.json"]
+    C --> C1["Bundles + converted objects"]
+    C --> C2["CRI / AFS2 / HCA / WAV"]
+    C --> C3["Originals + manifests + report_v3.json"]
+    A -.-> D["V1/legacy: raw stream; not authoritative"]
+```
+
+| Stage | Entry point | Main use | Output |
+| --- | --- | --- | --- |
+| V3 | asset_extractor.py | Complete result in a single run | PIPELINE_OUTPUT_V3/ |
+| V2 | reconstruct_unity_bundles.py | Dedicated UnityFS diagnostics/reconstruction | PIPELINE_OUTPUT_V2/ |
+| Legacy | historical scripts or outputs | Compatibility with earlier research | Do not use as the source of truth |
+
+## Quick verification
+
+The most representative way to verify installation, repair, UnityPy, and CRI without processing the entire dump is:
+
+```bash
+python asset_extractor.py --input octo_sorted --output PIPELINE_OUTPUT_V3_SMOKE --limit 1
+```
+
+A successful run creates PIPELINE_OUTPUT_V3_SMOKE/report_v3.json and leaves errors equal to 0. In the local snapshot, the one-item run rebuilt a bundle, loaded Unity objects, demultiplexed a USM, and produced WAV audio from an HCA entry.
+
+UnityFS can also be checked independently:
+
+```bash
+python reconstruct_unity_bundles.py \
+  --input octo_sorted/3_unity_bundles \
+  --output PIPELINE_OUTPUT_V2_SMOKE/1_reconstructed_bundles \
+  --limit 1
+```
+
+### Test suite
+
+The tests require pytest, which is not part of requirements.txt:
+
+```bash
+python -m pip install pytest
+python -m pytest -q
+```
+
+The pipeline tests import V3Pipeline from asset_extractor.py; the reconstruction test uses reconstruct_unity_bundles.py directly.
+
+## Troubleshooting
+
+### ModuleNotFoundError: lz4, UnityPy, or cricodecs
+
+Make sure the virtual environment is active and install dependencies with the same interpreter that will run the pipeline:
+
+```bash
+python -m pip install -r requirements.txt
+python -c "import lz4, UnityPy, cricodecs; print('dependencies OK')"
+```
+
+### no .bundle files found
+
+The specialized rebuilder expects octo_sorted/3_unity_bundles/*.bundle. Check the path and make sure you are running from the repository root, or pass --input explicitly.
+
+### errors.json contains entries
+
+The batch continues by design. Use the stage field to distinguish unity_bundle, cri_loose, afs2_awb, unity_typetree, or an individual conversion. Input files are not modified; the problematic output is recorded.
+
+### A .bin file appears in unconverted_raw/
+
+This does not necessarily mean data was lost. It is the preservation fallback used when UnityPy cannot convert an object, an image has invalid dimensions, or a typetree cannot be read. Use unity_objects.jsonl to locate the bundle, path_id, type, and name.
+
+### The process is slow or uses a lot of disk space
+
+Start with --limit 1 or --limit 10, use a temporary --output directory, and confirm the result before launching the complete run. --no-verify speeds up only the specialized V2 tool; it does not disable repairs.
+
+### The converted file is not enough to rebuild a client
+
+Use 1_complete_unityfs/ and the preserved originals. A PNG, OBJ, or JSON file is a research representation and may lose Unity-specific information; the complete bundle and serialized .bin files are the primary reference.
+
+## Reproducibility conventions
+
+- Outputs are organized by bundle, assets file, and path_id to avoid name collisions.
+- Readable names are sanitized to prevent path separators and metacharacters.
+- Manifests record SHA-256 hashes for rebuilt bundles and preserved media.
+- unity_objects.jsonl stores one JSON record per line, which is suitable for incremental searches without loading the entire file into memory.
+- Reports are written as UTF-8 and preserve non-UTF-8 bytes through Base64 or surrogateescape, depending on the object type.
+- PIPELINE_OUTPUT_V3/ is ignored by Git. Use a separate output directory to avoid mixing new results with legacy artifacts.
+
+## Scope and limitations
+
+This project is a content analysis and preservation tool. It does not:
+
+- rebuild the backend, Octo catalog, accounts, authentication, or matchmaking;
+- emulate battle simulation or create a Kick Flight server;
+- automatically repackage an APK or generate a ready-to-build Unity project;
+- guarantee a high-fidelity conversion for every Unity object;
+- semantically interpret every MonoBehaviour or unknown asset.
+
+The goal is to preserve the original evidence, produce useful representations, and leave enough traceability for further reproducible research.
+
+## Technical credits
+
+- **Project:** Kick Flight Asset Extractor
+- **Observed Unity target:** 2018.4.11f1
+- **Bundle format:** UnityFS format 6
+- **Compression:** LZ4 for blocks-info and Unity blocks according to metadata
+- **Media:** CRI USM, AFS2/AWB, HCA, and WAV through cricodecs
+- **Unity parser:** UnityPy
+- **Original author listed in the project:** Gixarde3
