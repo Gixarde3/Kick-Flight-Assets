@@ -1,5 +1,0 @@
-Material: fd_tx00701_sk
-Shader: 
-
-Saved Textures:
-  - _Tex: fd_tx00701_sk

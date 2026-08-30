@@ -1,4 +1,0 @@
-Material: BG_cup
-Shader: 
-
-Saved Textures:

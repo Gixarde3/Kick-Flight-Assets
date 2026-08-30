@@ -1,5 +1,0 @@
-Material: sky_xmas_night
-Shader: 
-
-Saved Textures:
-  - _Tex: tx_sky_xmas_night

@@ -1,5 +1,0 @@
-Material: fd_mt_00102_tr
-Shader: 
-
-Saved Textures:
-  - _MainTex: fd_tx_00102_emi

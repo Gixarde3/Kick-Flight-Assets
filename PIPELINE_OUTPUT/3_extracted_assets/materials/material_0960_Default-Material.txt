@@ -1,4 +1,0 @@
-Material: Default-Material
-Shader: 
-
-Saved Textures:

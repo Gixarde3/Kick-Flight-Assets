@@ -1,1 +1,0 @@
-Material: BG_Barrier_mat

@@ -1,5 +1,0 @@
-Material: sky
-Shader: 
-
-Saved Textures:
-  - _Tex: tx_BG00002_sk

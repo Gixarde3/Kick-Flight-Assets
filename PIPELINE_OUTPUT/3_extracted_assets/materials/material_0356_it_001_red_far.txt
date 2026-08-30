@@ -1,5 +1,0 @@
-Material: it_001_red_far
-Shader: 
-
-Saved Textures:
-  - _MainTex: it_tx_001_far_red
