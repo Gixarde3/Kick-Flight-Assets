@@ -1,3 +1,24 @@
 .venv
 __pycache__
 PIPELINE_OUTPUT_V3
+PIPELINE_OUTPUT_V3.zip
+base.apk
+
+# Generated reverse-engineering outputs and downloaded analysis tools.
+server_revival_analysis/apk_extracted/
+server_revival_analysis/il2cpp/
+server_revival_analysis/jadx/
+server_revival_analysis/jadx_cache/
+server_revival_analysis/jadx_config/
+server_revival_analysis/jadx_resources/
+server_revival_analysis/jadx_tmp/
+server_revival_analysis/tools/
+
+# Patched-APK pipeline local state. Never commit generated APKs or signing keys.
+apk_patch_pipeline/.tools/
+apk_patch_pipeline/.work/
+apk_patch_pipeline/artifacts/
+apk_patch_pipeline/profiles/*.local.json
+*.jks
+*.keystore
+*.apk.idsig

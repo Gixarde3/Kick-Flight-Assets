@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "profileName": "kickflight-2.11.0-direct-server-development",
+  "serverBaseUrl": "http://192.168.1.100:18080",
+  "expectedSourceSha256": "F79F1B48F86C4F5973C763CBC6C166BD6C42CC83D4E36ECA75D7D1CAB74AD8D1",
+  "buildToolsVersion": "35.0.0",
+  "signingMode": "development"
+}

@@ -4,6 +4,12 @@ Pipeline de preservación y extracción para los recursos locales de **Kick Flig
 
 > Uso responsable: trabaja únicamente con copias de archivos que tengas derecho a analizar. Este repositorio procesa contenido local; no implementa autenticación, matchmaking, lógica de batalla, acceso a cuentas ni protocolos del servidor de Grenge.
 
+## Generación de APK para el servidor comunitario
+
+El repositorio también incluye un generador reproducible y bloqueado a la versión 2.11.0 para crear, a partir de una copia local de `base.apk`, una APK de desarrollo que conecte directamente con el servidor privado. Consulta [apk_patch_pipeline/README.md](apk_patch_pipeline/README.md) para compilarla y [APK_PATCH_PIPELINE_CONTINUATION_PROMPT.md](APK_PATCH_PIPELINE_CONTINUATION_PROMPT.md) para continuar el trabajo con todo el contexto técnico acumulado.
+
+Solo se versionan scripts, tests, perfiles de ejemplo y reportes estáticos. Los APKs, claves de firma, herramientas descargadas y artefactos de compilación permanecen ignorados. La implementación del backend vive en el repositorio independiente `Kick-Flight-Private-Server`.
+
 ## Resumen ejecutivo
 
 El entrypoint actual es [asset_extractor.py](asset_extractor.py). Con un solo comando recorre octo_sorted/ y genera:
